@@ -1,3 +1,6 @@
+CREATE_COURIER_SUCCESS_RESPONSE = '{"ok":true}'
+
+
 class Users:
     data_current = {
         "login": "samokatuser2025",

@@ -6,10 +6,11 @@ from data import Orders
 from urls import Urls
 
 
+@allure.title('Создание заказа')
 class TestCreateOrder:
 
     @pytest.mark.parametrize('order_data', [{"color": ["BLACK"]}, {"color": ["GREY"]}, {"color": [""]}, {"color": ["BLACK", "GREY"]}])
-    @allure.title('Создание заказа')
+    @allure.step('Заказ может быть создан успешно')
     def test_create_order(self, order_data):
         Orders.data_order.update(order_data)
         order_data = json.dumps(Orders.data_order)

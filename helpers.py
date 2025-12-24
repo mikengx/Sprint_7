@@ -8,7 +8,7 @@ def generate_random_string(length):
     random_string = ''.join(random.choice(letters) for i in range(length))
     return random_string
 
-def register_new_courier():
+def generate_data_to_register_new_courier():
     login = generate_random_string(10)
     password = generate_random_string(10)
     firstName = generate_random_string(10)
@@ -19,7 +19,7 @@ def register_new_courier():
     }
     return reg_data
 
-def register_new_courier_without_login():
+def generate_data_to_register_new_courier_without_login():
     password = generate_random_string(10)
     firstName = generate_random_string(10)
     reg_data = {
@@ -28,7 +28,7 @@ def register_new_courier_without_login():
     }
     return reg_data
 
-def register_new_courier_without_password():
+def generate_data_to_register_new_courier_without_password():
     login = generate_random_string(10)
     firstName = generate_random_string(10)
     reg_data = {
