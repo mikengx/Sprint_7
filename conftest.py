@@ -2,47 +2,41 @@ import pytest
 import requests
 from urls import Urls
 from helpers import generate_data_to_register_new_courier
+import allure
 
 
 @pytest.fixture
-def create_courier_and_cleanup():
-    """Фикстура создает курьера и возвращает данные для теста, удаляет после"""
+def data_for_courier_creation():
     courier_data = generate_data_to_register_new_courier()
-    response = requests.post(f'{Urls.COURIER_CREATE}', json=courier_data)
-    
-    # Проверяем успешное создание
-    assert response.status_code == 201, f"Setup failed - не удалось создать курьера: {response.text}"
-        
-    yield response
-    
-    # Очистка после теста
-    # Нужно залогиниться, чтобы получить id для удаления
-    courier_login_response = requests.post(f'{Urls.COURIER_LOGIN}', json=courier_data)
-    assert courier_login_response.status_code == 200, f"Teardown failed - не удалось залогиниться: {courier_login_response.text}"
-    courier_login_response_json = courier_login_response.json()
-    courier_id = courier_login_response_json["id"]
-    courier_delete_response = requests.delete(f'{Urls.COURIER_DELETE}/{courier_id}')
-    assert courier_delete_response.status_code == 200, f"Teardown failed - не удалось удалить курьера: {courier_delete_response.text}"
+
+    yield courier_data
 
 
 @pytest.fixture
-def create_courier_twice_and_cleanup():
-    """Фикстура создает курьера дважды и возвращает данные для теста, удаляет после"""
-    courier_data = generate_data_to_register_new_courier()
-    # create courier for the first time:
-    response_initial = requests.post(f'{Urls.COURIER_CREATE}', json=courier_data)
-    # Проверяем успешное создание
-    assert response_initial.status_code == 201, f"Setup failed - не удалось создать курьера: {response_initial.text}"
-    # re-create the same courier:
-    response_duplicate = requests.post(f'{Urls.COURIER_CREATE}', json=courier_data)
+def create_courier_and_cleanup(data_for_courier_creation):
+    with allure.step('Отправляем POST запрос на создание курьера'):
+        requests.post(f'{Urls.COURIER_CREATE}', json=data_for_courier_creation)
+    
+    yield data_for_courier_creation
 
-    yield response_duplicate
 
+@pytest.fixture(autouse=True)
+def courier_cleanup(request, data_for_courier_creation):
     # Очистка после теста
-    # Нужно залогиниться, чтобы получить id для удаления
-    courier_login_response = requests.post(f'{Urls.COURIER_LOGIN}', json=courier_data)
-    assert courier_login_response.status_code == 200, f"Teardown failed - не удалось залогиниться: {courier_login_response.text}"
-    courier_login_response_json = courier_login_response.json()
-    courier_id = courier_login_response_json["id"]
-    courier_delete_response = requests.delete(f'{Urls.COURIER_DELETE}/{courier_id}')
-    assert courier_delete_response.status_code == 200, f"Teardown failed - не удалось удалить курьера: {courier_delete_response.text}"
+    created_couriers = []
+
+    def add_courier_for_cleanup():
+        # Нужно залогиниться, чтобы получить id для удаления
+        courier_data = data_for_courier_creation
+        with allure.step('Отправляем POST запрос на залогинивание курьера'):
+            courier_login_response = requests.post(f'{Urls.COURIER_LOGIN}', json=courier_data)
+        courier_id = courier_login_response.json()["id"]
+        created_couriers.append(courier_id)
+
+    def finalizer():
+        for courier_id in created_couriers:
+            with allure.step('Отправляем DELETE запрос на удаление курьера (cleanup in teardown phase)'):
+                requests.delete(f'{Urls.COURIER_DELETE}/{courier_id}')
+
+    request.addfinalizer(finalizer)
+    yield add_courier_for_cleanup
